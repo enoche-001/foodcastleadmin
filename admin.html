@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — FoodCastle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="loginPage">
+    <div class="login-box">
+      <div class="login-logo">FoodCastle</div>
+      <p>Admin Panel — Sign in to continue</p>
+      <input type="email"    id="lEmail" placeholder="Email address">
+      <input type="password" id="lPass"  placeholder="Password">
+      <button class="login-btn" onclick="doLogin()">Sign In</button>
+      <p class="login-err" id="loginErr">Incorrect email or password.</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">FoodCastle <span>Admin Panel</span></div>
+      <nav class="sidebar-nav">
+        <div class="s-item active" onclick="showPanel('overview',this)">📊 Overview</div>
+        <div class="s-item" onclick="showPanel('orders',this)">📋 Orders</div>
+        <div class="s-item" onclick="showPanel('menu',this)">🍽 Menu</div>
+      </nav>
+      <div class="s-logout" onclick="doLogout()">⬅ Sign Out</div>
+    </aside>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-logo">FoodCastle Admin</div>
+      <div class="topbar-right">
+        <span class="admin-email" id="adminEmail"></span>
+        <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- SCROLLABLE CONTENT AREA -->
+    <div class="scroll-body">
+
+      <!-- OVERVIEW -->
+      <div class="panel active" id="panel-overview">
+        <h1 class="panel-title">Overview</h1>
+        <p class="panel-sub">Live snapshot of your restaurant</p>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-lbl">Total Orders</div><div class="stat-val orange" id="st-total">—</div></div>
+          <div class="stat-card"><div class="stat-lbl">Pending</div><div class="stat-val" id="st-pending">—</div></div>
+          <div class="stat-card"><div class="stat-lbl">Completed</div><div class="stat-val" id="st-done">—</div></div>
+          <div class="stat-card"><div class="stat-lbl">Menu Items</div><div class="stat-val" id="st-menu">—</div></div>
+        </div>
+        <p style="color:var(--muted);font-size:13px;line-height:1.6;">
+          Tap <strong style="color:var(--orange2);">Orders</strong> below to manage incoming orders.<br>
+          Tap <strong style="color:var(--orange2);">Menu</strong> to add, edit or remove items.
+        </p>
+      </div>
+
+      <!-- ORDERS -->
+      <div class="panel" id="panel-orders">
+        <h1 class="panel-title">Orders</h1>
+        <p class="panel-sub">Live incoming orders — update status in real time</p>
+        <div class="order-filters">
+          <button class="o-pill active" onclick="filterOrders(this,'all')">All</button>
+          <button class="o-pill" onclick="filterOrders(this,'Pending')">Pending</button>
+          <button class="o-pill" onclick="filterOrders(this,'Preparing')">Preparing</button>
+          <button class="o-pill" onclick="filterOrders(this,'Completed')">Completed</button>
+          <button class="o-pill" onclick="filterOrders(this,'Cancelled')">Cancelled</button>
+        </div>
+        <div class="orders-list" id="ordersList">
+          <div class="no-data">Loading orders...</div>
+        </div>
+      </div>
+
+      <!-- MENU -->
+      <div class="panel" id="panel-menu">
+        <h1 class="panel-title">Menu</h1>
+        <p class="panel-sub">Add, edit, delete items and toggle availability</p>
+        <div class="menu-toprow">
+          <button class="add-btn-main" onclick="openModal()">+ Add Item</button>
+        </div>
+        <div class="menu-cards" id="menuCards">
+          <div class="no-data">Loading menu...</div>
+        </div>
+      </div>
+
+    </div><!-- end scroll-body -->
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <button class="bnav-item active" onclick="showPanel('overview',this)"><span class="icon">📊</span>Overview</button>
+      <button class="bnav-item"        onclick="showPanel('orders',this)"><span class="icon">📋</span>Orders</button>
+      <button class="bnav-item"        onclick="showPanel('menu',this)"><span class="icon">🍽</span>Menu</button>
+    </nav>
+
+  </div>
+
+  <!-- MENU MODAL -->
+  <div class="modal-bg" id="menuModal">
+    <div class="modal">
+      <h3 id="modalTitle">Add Menu Item</h3>
+      <div class="m-grid">
+        <input class="full" type="text"   id="mName"     placeholder="Item name *">
+        <input              type="number" id="mPrice"    placeholder="Price (₦) *">
+        <input              type="text"   id="mCategory" placeholder="Category (e.g. Rice, Drinks)">
+        <div class="full img-upload-wrap">
+          <label class="img-upload-label" for="mImageFile" id="imgUploadLabel">
+            <span class="img-upload-icon">📷</span>
+            <span id="imgUploadText">Tap to upload image from gallery</span>
+          </label>
+          <input type="file" id="mImageFile" accept="image/*" onchange="handleImageUpload(this)" style="display:none;">
+          <img id="imgPreview" src="" alt="" style="display:none; width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-top:8px;">
+          <input type="hidden" id="mImage">
+        </div>
+        <textarea class="full"            id="mDesc"     placeholder="Short description (optional)"></textarea>
+        <div class="check-row">
+          <input type="checkbox" id="mAvail" checked style="width:auto;accent-color:var(--orange);">
+          <label for="mAvail">Available / In Stock</label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="m-cancel" onclick="closeModal()">Cancel</button>
+        <button class="m-save"   onclick="saveItem()">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE ORDER MODAL -->
+  <div class="del-modal-bg" id="delOrderModal">
+    <div class="del-modal">
+      <div class="del-modal-icon">🗑️</div>
+      <h3>Delete Order?</h3>
+      <p id="delOrderDesc">This will permanently remove this order from the system. This cannot be undone.</p>
+      <input type="password" id="delPassword" placeholder="Enter admin password to confirm">
+      <p class="del-err" id="delErr">Wrong password. Try again.</p>
+      <div class="del-modal-foot">
+        <button class="del-cancel-btn" onclick="closeDelModal()">Cancel</button>
+        <button class="del-confirm-btn" onclick="confirmDeleteOrder()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, addDoc,
+             updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const cfg = {
+      apiKey:            "AIzaSyAAXngTIf3ALIHT9WYL-p28vKtD0PK5o8k",
+      authDomain:        "shopnaija-5038f.firebaseapp.com",
+      projectId:         "shopnaija-5038f",
+      storageBucket:     "shopnaija-5038f.firebasestorage.app",
+      messagingSenderId: "816824651598",
+      appId:             "1:816824651598:web:2a518218b03050afd1d81f"
+    };
+
+    const app  = initializeApp(cfg);
+    const db   = getFirestore(app);
+    const auth = getAuth(app);
+
+    let allOrders = [], allMenu = [], editId = null, activeStatus = 'all';
+
+    // ── AUTH ──
+    onAuthStateChanged(auth, user => {
+      const login = document.getElementById('loginPage');
+      const dash  = document.getElementById('dashboard');
+      if (user) {
+        login.style.display = 'none';
+        dash.style.display  = 'block';
+        document.getElementById('adminEmail').textContent = user.email;
+        startListeners();
+      } else {
+        login.style.display = 'flex';
+        dash.style.display  = 'none';
+      }
+    });
+
+    window.doLogin = async function() {
+      const email = document.getElementById('lEmail').value.trim();
+      const pass  = document.getElementById('lPass').value;
+      const err   = document.getElementById('loginErr');
+      err.style.display = 'none';
+      try { await signInWithEmailAndPassword(auth, email, pass); }
+      catch(e) { err.style.display = 'block'; }
+    };
+
+    window.doLogout = () => signOut(auth);
+    document.getElementById('lPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+    // ── LISTENERS ──
+    function startListeners() {
+      onSnapshot(query(collection(db,'orders'), orderBy('createdAt','desc')), snap => {
+        allOrders = snap.docs.map(d => ({id:d.id,...d.data()}));
+        renderOrders();
+        updateStats();
+      });
+      onSnapshot(collection(db,'menu'), snap => {
+        allMenu = snap.docs.map(d => ({id:d.id,...d.data()}));
+        renderMenuCards();
+        updateStats();
+      });
+    }
+
+    // ── PANELS ──
+    window.showPanel = function(name, el) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.bnav-item, .s-item').forEach(b => b.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      // scroll back to top on panel switch
+      document.querySelector('.scroll-body').scrollTop = 0;
+      // mark active on both sidebar and bottom nav
+      document.querySelectorAll('.bnav-item, .s-item').forEach(b => {
+        if (b.getAttribute('onclick')?.includes(`'${name}'`)) b.classList.add('active');
+      });
+    };
+
+    // ── ORDERS ──
+    function renderOrders() {
+      const list = document.getElementById('ordersList');
+      const data = activeStatus === 'all' ? allOrders : allOrders.filter(o => o.status === activeStatus);
+      if (!data.length) { list.innerHTML = '<div class="no-data">No orders here yet.</div>'; return; }
+      list.innerHTML = data.map(o => {
+        const items = o.items ? o.items.map(i => `${i.qty}× ${i.name}`).join(', ') : '—';
+        const time  = o.createdAt?.toDate
+          ? o.createdAt.toDate().toLocaleString('en-NG', {dateStyle:'short', timeStyle:'short'})
+          : 'Just now';
+        return `
+          <div class="order-card">
+            <div class="order-top">
+              <div>
+                <div class="o-id">#${o.id.slice(-6).toUpperCase()} · ${time}</div>
+                <div class="o-name">${o.customerName}</div>
+                <div class="o-phone">${o.phone} · ${o.address||'N/A'}</div>
+              </div>
+              <span class="badge b-${o.status}">${o.status}</span>
+            </div>
+            <div class="o-items">${items}</div>
+            <div class="order-foot">
+              <div>
+                <div class="o-total">₦${Number(o.total).toLocaleString()}</div>
+                <div class="o-type">${o.orderType||''}</div>
+              </div>
+              <div class="status-btns">
+                ${o.status!=='Preparing' ? `<button class="s-btn"        onclick="updStatus('${o.id}','Preparing')">Preparing</button>` : ''}
+                ${o.status!=='Completed' ? `<button class="s-btn done"   onclick="updStatus('${o.id}','Completed')">Done ✓</button>` : ''}
+                ${o.status!=='Cancelled' ? `<button class="s-btn cancel" onclick="updStatus('${o.id}','Cancelled')">Cancel</button>` : ''}
+                <button class="s-btn del" onclick="promptDeleteOrder('${o.id}','${o.customerName}')">🗑 Delete</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    window.filterOrders = function(btn, status) {
+      document.querySelectorAll('.o-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeStatus = status;
+      renderOrders();
+    };
+
+    window.updStatus = async (id, status) => await updateDoc(doc(db,'orders',id), {status});
+
+    // ── DELETE ORDER WITH PASSWORD ──
+    // Set your admin delete password below
+    const DELETE_PASSWORD = 'shopnaija123';
+    let pendingDeleteId = null;
+
+    window.promptDeleteOrder = function(id, name) {
+      pendingDeleteId = id;
+      document.getElementById('delOrderDesc').textContent =
+        `You are about to permanently delete the order from "${name}". This cannot be undone.`;
+      document.getElementById('delPassword').value = '';
+      document.getElementById('delErr').style.display = 'none';
+      document.getElementById('delOrderModal').classList.add('open');
+      setTimeout(() => document.getElementById('delPassword').focus(), 200);
+    };
+
+    window.closeDelModal = function() {
+      document.getElementById('delOrderModal').classList.remove('open');
+      pendingDeleteId = null;
+    };
+
+    window.confirmDeleteOrder = async function() {
+      const pass = document.getElementById('delPassword').value;
+      const err  = document.getElementById('delErr');
+      if (pass !== DELETE_PASSWORD) {
+        err.style.display = 'block';
+        document.getElementById('delPassword').value = '';
+        document.getElementById('delPassword').focus();
+        return;
+      }
+      if (!pendingDeleteId) return;
+      try {
+        await deleteDoc(doc(db, 'orders', pendingDeleteId));
+        closeDelModal();
+      } catch(e) {
+        alert('Could not delete order. Please try again.');
+      }
+    };
+
+    // Allow Enter key on password field
+    document.getElementById('delPassword').addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmDeleteOrder();
+    });
+
+    // ── MENU CARDS ──
+    function renderMenuCards() {
+      const wrap = document.getElementById('menuCards');
+      if (!allMenu.length) { wrap.innerHTML = '<div class="no-data">No menu items yet. Add your first item above.</div>'; return; }
+      wrap.innerHTML = allMenu.map(item => `
+        <div class="m-card">
+          ${item.image ? `<img src="${item.image}" alt="${item.name}" loading="lazy">` : `<div class="no-img">🍽</div>`}
+          <div class="m-body">
+            <div class="m-cat">${item.category||''}</div>
+            <div class="m-name">${item.name}</div>
+            <div class="m-price">₦${Number(item.price).toLocaleString()}</div>
+            <div class="m-foot">
+              <button class="avail-btn av-${item.available!==false}" onclick="toggleAvail('${item.id}',${item.available!==false})">
+                ${item.available!==false ? '● In Stock' : '● Out of Stock'}
+              </button>
+              <div class="m-actions">
+                <button class="m-edit" onclick="openModal('${item.id}')">Edit</button>
+                <button class="m-del"  onclick="delItem('${item.id}')">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.toggleAvail = async (id, current) => await updateDoc(doc(db,'menu',id), {available: !current});
+    window.delItem = async function(id) {
+      if (confirm('Delete this item?')) await deleteDoc(doc(db,'menu',id));
+    };
+
+    // ── IMAGE UPLOAD ──
+    window.handleImageUpload = function(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      // Warn if image is too large (over 500KB)
+      if (file.size > 500 * 1024) {
+        alert('Image is large (' + (file.size/1024/1024).toFixed(1) + 'MB). Consider using a smaller image for faster loading.');
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64 = e.target.result;
+        document.getElementById('mImage').value = base64;
+        const preview = document.getElementById('imgPreview');
+        preview.src = base64;
+        preview.style.display = 'block';
+        document.getElementById('imgUploadText').textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    function resetImageUpload(existingUrl) {
+      const preview  = document.getElementById('imgPreview');
+      const label    = document.getElementById('imgUploadText');
+      document.getElementById('mImageFile').value = '';
+      if (existingUrl) {
+        document.getElementById('mImage').value = existingUrl;
+        preview.src = existingUrl;
+        preview.style.display = 'block';
+        label.textContent = 'Image loaded — tap to change';
+      } else {
+        document.getElementById('mImage').value = '';
+        preview.src = '';
+        preview.style.display = 'none';
+        label.textContent = 'Tap to upload image from gallery';
+      }
+    }
+    window.openModal = function(id) {
+      editId = id || null;
+      document.getElementById('modalTitle').textContent = id ? 'Edit Item' : 'Add Menu Item';
+      const item = id ? allMenu.find(i => i.id === id) : null;
+      document.getElementById('mName').value     = item?.name        || '';
+      document.getElementById('mPrice').value    = item?.price       || '';
+      document.getElementById('mCategory').value = item?.category    || '';
+      document.getElementById('mDesc').value     = item?.description || '';
+      document.getElementById('mAvail').checked  = item ? item.available !== false : true;
+      resetImageUpload(item?.image || '');
+      document.getElementById('menuModal').classList.add('open');
+    };
+
+    window.closeModal = () => document.getElementById('menuModal').classList.remove('open');
+
+    window.saveItem = async function() {
+      const name      = document.getElementById('mName').value.trim();
+      const price     = document.getElementById('mPrice').value.trim();
+      const category  = document.getElementById('mCategory').value.trim();
+      const image     = document.getElementById('mImage').value.trim();
+      const desc      = document.getElementById('mDesc').value.trim();
+      const available = document.getElementById('mAvail').checked;
+      if (!name || !price) { alert('Name and price are required.'); return; }
+      const data = {name, price: Number(price), category, image, description: desc, available};
+      if (editId) { await updateDoc(doc(db,'menu',editId), data); }
+      else        { await addDoc(collection(db,'menu'), {...data, createdAt: serverTimestamp()}); }
+      closeModal();
+    };
+
+    // ── STATS ──
+    function updateStats() {
+      document.getElementById('st-total').textContent   = allOrders.length;
+      document.getElementById('st-pending').textContent = allOrders.filter(o => o.status === 'Pending').length;
+      document.getElementById('st-done').textContent    = allOrders.filter(o => o.status === 'Completed').length;
+      document.getElementById('st-menu').textContent    = allMenu.length;
+    }
+  </script>
+</body>
+</html>
